@@ -1,0 +1,22 @@
+{
+  "name": "rollup-plugin-natives",
+  "version": "0.5.0",
+  "description": "Extract native modules (.node files) while creating a rollup bundle and put them in one place",
+  "main": "src/index.js",
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "rollup": ">=0.56.0"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "repository": "danielgindi/rollup-plugin-natives",
+  "author": "Daniel Cohen Gindi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/danielgindi/rollup-plugin-natives/issues"
+  },
+  "homepage": "https://github.com/danielgindi/rollup-plugin-natives"
+}
