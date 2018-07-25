@@ -1,5 +1,7 @@
 # rollup-plugin-natives
 
+[![npm Version](https://badge.fury.io/js/rollup-plugin-natives.png)](https://npmjs.org/package/rollup-plugin-natives)
+
 Extract native modules (.node files) while creating a rollup bundle and put them in one place"
 
 
