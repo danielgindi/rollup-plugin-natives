@@ -57,5 +57,11 @@ typings/
 # dotenv environment variables file
 .env
 
+# Webstorm
+.idea
+
+# VSCode
+.vscode
+
 # next.js build output
 .next
