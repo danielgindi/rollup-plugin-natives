@@ -24,7 +24,7 @@ function nativePlugin(options) {
         if (dlopen)
             return `
             function get() {
-              let p = require('path').resolve(${JSON.stringify(path)});
+              let p = require('path').resolve(__dirname, ${JSON.stringify(path)});
               if (!require.cache[p]) {
                 let module = {exports:{}};
                 process.dlopen(module, p);
