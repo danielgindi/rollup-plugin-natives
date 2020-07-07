@@ -41,11 +41,15 @@ export default {
             dlopen: false,
             
             // Modify the final filename for specific modules
-            // Receives a full path to the original file, and returns a desired filename
+            // A function that receives a full path to the original file, and returns a desired filename
             map: modulePath => 'filename.node',
             
-            // Or you can return a desired file name and a specific destination to copy to
+            // OR you can have a function that returns a desired file name and a specific destination to copy to
             map: modulePath => { name: 'filename.node', copyTo: 'C:\\Dist\\libs\\filename.node' },
+
+            // an object that gives the replacement mappin in case the node module was missing
+            // If not set the following is used. e.g. `Debug` is matched and replaced with `Release` via regex .
+            replacements: {'Debug': 'Release', 'Release':'Debug'}
         })
     ]
 };
