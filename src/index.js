@@ -7,6 +7,7 @@ function nativePlugin(options) {
     let destDir = options.destDir || './';
     let dlopen = options.dlopen || false;
     let map = options.map;
+    let replacements = options.replacements || {'Debug': 'Release', 'Release':'Debug'}
 
     if (typeof map !== 'function') {
         map = fullPath => generateDefaultMapping(fullPath);
@@ -179,12 +180,23 @@ function nativePlugin(options) {
                     renamedMap.set(nativePath, mapping);
                     isNew = true;
                 }
-
                 if (isNew) {
-                    if (Fs.pathExistsSync(nativePath)) {
+                    if (Fs.pathExistsSync(nativePath))
                         Fs.copyFileSync(nativePath, mapping.copyTo);
-                    } else {
-                        console.warn(`${nativePath} does not exist`)
+                    else {
+                        // try replacements
+                        let nativePathReplacement
+                        for (const key in replacements) {
+                            if (nativePath.match(key))
+                                nativePathReplacement = nativePath.replace(key, replacements[key])
+                        }
+                        if (nativePathReplacement && Fs.pathExistsSync(nativePathReplacement)) {
+                            mapping = renamedMap.get(nativePathReplacement);
+                            Fs.copyFileSync(nativePathReplacement, mapping.copyTo);
+                            console.warn(`${nativePathReplacement} was used instead of ${nativePath}`);
+                        }
+                        else
+                            console.warn(`${nativePath} does not exist`)  // ignore
                     }
                 }
 
