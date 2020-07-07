@@ -1,5 +1,5 @@
 const Path = require('path');
-const Fs = require('fs');
+const Fs = require('fs-extra');
 
 function nativePlugin(options) {
 
@@ -14,9 +14,7 @@ function nativePlugin(options) {
 
     const PREFIX = '\0natives:';
 
-    try {
-        Fs.mkdirSync(copyTo);
-    } catch {}
+    Fs.mkdirpSync(copyTo);
 
     let renamedMap = /**@type {Map<String, {name: String, copyTo: String}>}*/new Map();
 
