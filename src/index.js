@@ -181,7 +181,11 @@ function nativePlugin(options) {
                 }
 
                 if (isNew) {
-                    Fs.copyFileSync(nativePath, mapping.copyTo);
+                    if (Fs.pathExistsSync(nativePath)) {
+                        Fs.copyFileSync(nativePath, mapping.copyTo);
+                    } else {
+                        console.warn(`${nativePath} does not exist`)
+                    }
                 }
 
                 return PREFIX + mapping.name;
