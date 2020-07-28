@@ -10,7 +10,9 @@
   "peerDependencies": {
     "rollup": ">=0.56.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "fs-extra": "^9.0.1"
+  },
   "devDependencies": {},
   "repository": "danielgindi/rollup-plugin-natives",
   "author": "Daniel Cohen Gindi",
