@@ -47,7 +47,7 @@ export default {
             // OR you can have a function that returns a desired file name and a specific destination to copy to
             map: modulePath => { name: 'filename.node', copyTo: 'C:\\Dist\\libs\\filename.node' },
 
-            // an object that gives the replacement mappin in case the node module was missing
+            // an object that provides the replacement mapping in case of a missing node module
             // If not set the following is used. e.g. `Debug` is matched and replaced with `Release` via regex .
             replacements: {'Debug': 'Release', 'Release':'Debug'}
         })
