@@ -1,5 +1,5 @@
 const Path = require('path');
-const Fs = require('fs');
+const Fs = require('fs-extra');
 
 function nativePlugin(options) {
 
@@ -14,9 +14,7 @@ function nativePlugin(options) {
 
     const PREFIX = '\0natives:';
 
-    try {
-        Fs.mkdirSync(copyTo);
-    } catch {}
+    Fs.mkdirpSync(copyTo);
 
     let renamedMap = /**@type {Map<String, {name: String, copyTo: String}>}*/new Map();
 
@@ -87,7 +85,7 @@ function nativePlugin(options) {
                     if (moduleRoot === '.')
                         moduleRoot = process.cwd();
 
-                    if (Fs.existsSync(Path.join(moduleRoot, 'package.json')) || Fs.existsSync(Path.join(moduleRoot, 'node_modules')))
+                    if (Fs.pathExistsSync(Path.join(moduleRoot, 'package.json')) || Fs.pathExistsSync(Path.join(moduleRoot, 'node_modules')))
                         break;
 
                     if (prev === moduleRoot)
@@ -123,7 +121,7 @@ function nativePlugin(options) {
                     return Path.join.apply(Path, parts);
                 });
 
-                let chosenPath = possiblePaths.filter(x => Fs.existsSync(x))[0] || possiblePaths[0];
+                let chosenPath = possiblePaths.filter(x => Fs.pathExistsSync(x))[0] || possiblePaths[0];
 
                 return "require(" + JSON.stringify(chosenPath.replace(/\\/g, '/')) + ")";
             });
@@ -163,9 +161,9 @@ function nativePlugin(options) {
             let nativePath = null;
             if (/\.(node|dll)$/i.test(importee))
                 nativePath = resolvedFull;
-            else if (Fs.existsSync(resolvedFull + '.node'))
+            else if (Fs.pathExistsSync(resolvedFull + '.node'))
                 nativePath = resolvedFull + '.node';
-            else if (Fs.existsSync(resolvedFull + '.dll'))
+            else if (Fs.pathExistsSync(resolvedFull + '.dll'))
                 nativePath = resolvedFull + '.dll';
 
             if (nativePath) {
@@ -183,7 +181,11 @@ function nativePlugin(options) {
                 }
 
                 if (isNew) {
-                    Fs.copyFileSync(nativePath, mapping.copyTo);
+                    if (Fs.pathExistsSync(nativePath)) {
+                        Fs.copyFileSync(nativePath, mapping.copyTo);
+                    } else {
+                        console.warn(`${nativePath} does not exist`)
+                    }
                 }
 
                 return PREFIX + mapping.name;
