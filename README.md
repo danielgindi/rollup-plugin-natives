@@ -14,8 +14,8 @@ npm install --save-dev rollup-plugin-natives
 
 ## Usage
 
-In some cases you have native dependencies, maybe require by `bindings` or `node-pre-gyp`,  
-and you have to put them somewhere accessile to the rolled-up bundle.  
+In some cases you have native dependencies, maybe require by `bindings` or `node-pre-gyp`,
+and you have to put them somewhere accessile to the rolled-up bundle.
 This package is just for doing exactly this.
 
 ```js
@@ -46,6 +46,9 @@ export default {
 
             // Or a function that returns a desired file name and a specific destination to copy to
             map: (modulePath) => { name: 'filename.node', copyTo: 'C:\\Dist\\libs\\filename.node' },
+
+            // Generate sourcemap
+            sourcemap: true
         })
     ]
 };
