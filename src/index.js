@@ -1,5 +1,6 @@
 const Path = require('path');
 const Fs = require('fs-extra');
+const MagicString = require('magic-string');
 
 function nativePlugin(options) {
 
@@ -7,6 +8,7 @@ function nativePlugin(options) {
     let destDir = options.destDir || './';
     let dlopen = options.dlopen || false;
     let map = options.map;
+    let isSourceMapEnabled = options.sourceMap !== false && options.sourcemap !== false
 
     if (typeof map !== 'function') {
         map = fullPath => generateDefaultMapping(fullPath);
@@ -61,6 +63,25 @@ function nativePlugin(options) {
         };
     }
 
+
+    function replace(code, magicString, pattern, fn) {
+        let result = false;
+        let match;
+
+        while ((match = pattern.exec(code))) {
+            let replacement = fn(match);
+            if (replacement == null) continue;
+
+            let start = match.index;
+            let end = start + match[0].length;
+            magicString.overwrite(start, end, replacement);
+
+            result = true
+        }
+
+        return result;
+    }
+
     return {
         name: 'rollup-plugin-natives',
 
@@ -74,8 +95,16 @@ function nativePlugin(options) {
             return null;
         },
 
-        transform(source, id) {
-            let code = source.replace(/require\(['"]bindings['"]\)\(((['"]).+?\2)?\)/g, (match, name) => {
+        transform(code, id) {
+            let magicString = new MagicString(code);
+            let bindings = /require\(['"]bindings['"]\)\(((['"]).+?\2)?\)/g;
+
+            let hasBindingReplacements = false;
+            let hasBinaryReplacements = false;
+
+            hasBindingReplacements = replace(code, magicString, bindings, (match) => {
+                let name = match[1];
+
                 let nativeAlias = name ? new Function('return ' + name)() : 'bindings.node';
                 if (!nativeAlias.endsWith('.node'))
                     nativeAlias += '.node';
@@ -124,18 +153,32 @@ function nativePlugin(options) {
                 let chosenPath = possiblePaths.filter(x => Fs.pathExistsSync(x))[0] || possiblePaths[0];
 
                 return "require(" + JSON.stringify(chosenPath.replace(/\\/g, '/')) + ")";
-            });
+            })
+
 
             if (code.indexOf('node-pre-gyp') !== -1) {
-                code = source.replace(/(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+binary\.find\(path\.resolve\(path\.join\(__dirname,\s*((['"]).*\4)\)\)\);?\s*(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\(\2\)/g, (match, d1, v1, ref, p, d2, v2) => {
+                let binary = /(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+binary\.find\(path\.resolve\(path\.join\(__dirname,\s*((['"]).*\4)\)\)\);?\s*(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\(\2\)/g;
+
+                hasBinaryReplacements = replace(code, magicString, binary, (match) => {
                     let preGyp = null;
 
                     try {
                         // noinspection NpmUsedModulesInstalled
                         preGyp = require('node-pre-gyp')
                     } catch (ex) {
-                        return match;
+                        return null;
                     }
+
+
+                    let start = match.index;
+                    let end = start + match[0].length;
+
+                    let d1 = match[1];
+                    let v1 = match[2];
+                    let ref = match[3];
+                    let p = match[4];
+                    let d2 = match[5];
+                    let v2 = match[6];
 
                     let libPath = preGyp.find(Path.resolve(Path.join(Path.dirname(id), new Function('return ' + ref)())));
 
@@ -143,7 +186,15 @@ function nativePlugin(options) {
                 });
             }
 
-            return code;
+            if (!hasBindingReplacements && !hasBinaryReplacements)
+                return null;
+
+            let result = { code: magicString.toString() };
+            if (isSourceMapEnabled) {
+              result.map = magicString.generateMap({ hires: true });
+            }
+
+            return result;
         },
 
         resolveId(importee, importer) {
