@@ -14,8 +14,8 @@ npm install --save-dev rollup-plugin-natives
 
 ## Usage
 
-In some cases you have native dependencies, maybe require by `bindings` or `node-pre-gyp`,
-and you have to put them somewhere accessile to the rolled-up bundle.
+In some cases you have native dependencies (usually required by `bindings` or `node-pre-gyp`) 
+and you have to put them somewhere accessible to the rolled-up bundle.  
 This package is just for doing exactly this.
 
 ```js
