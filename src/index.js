@@ -72,7 +72,7 @@ function nativePlugin(options) {
 
         while ((match = pattern.exec(code))) {
             let replacement = fn(match);
-            if (replacement == null) continue;
+            if (replacement === null) continue;
 
             let start = match.index;
             let end = start + match[0].length;
@@ -99,12 +99,12 @@ function nativePlugin(options) {
 
         transform(code, id) {
             let magicString = new MagicString(code);
-            let bindings = /require\(['"]bindings['"]\)\(((['"]).+?\2)?\)/g;
+            let bindingsRgx = /require\(['"]bindings['"]\)\(((['"]).+?\2)?\)/g;
 
             let hasBindingReplacements = false;
             let hasBinaryReplacements = false;
 
-            hasBindingReplacements = replace(code, magicString, bindings, (match) => {
+            hasBindingReplacements = replace(code, magicString, bindingsRgx, (match) => {
                 let name = match[1];
 
                 let nativeAlias = name ? new Function('return ' + name)() : 'bindings.node';
@@ -128,19 +128,19 @@ function nativePlugin(options) {
                 }
 
                 let partsMap = {
-                    'compiled': process.env.NODE_BINDINGS_COMPILED_DIR || 'compiled'
-                    , 'platform': process.platform
-                    , 'arch': process.arch
-                    , 'version': process.versions.node
-                    , 'bindings': nativeAlias
-                    , 'module_root': moduleRoot,
+                    'compiled': process.env.NODE_BINDINGS_COMPILED_DIR || 'compiled',
+                    'platform': process.platform,
+                    'arch': process.arch,
+                    'version': process.versions.node,
+                    'bindings': nativeAlias,
+                    'module_root': moduleRoot,
                 };
 
                 let possibilities = [
-                    ['module_root', 'build', 'bindings']
-                    , ['module_root', 'build', 'Debug', 'bindings']
-                    , ['module_root', 'build', 'Release', 'bindings']
-                    , ['module_root', 'compiled', 'version', 'platform', 'arch', 'bindings'],
+                    ['module_root', 'build', 'bindings'],
+                    ['module_root', 'build', 'Debug', 'bindings'],
+                    ['module_root', 'build', 'Release', 'bindings'],
+                    ['module_root', 'compiled', 'version', 'platform', 'arch', 'bindings'],
                 ];
 
                 let possiblePaths = /**@type {String[]}*/possibilities.map(parts => {
