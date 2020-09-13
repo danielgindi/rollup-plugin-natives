@@ -1,0 +1,5 @@
+# Ignore test artifacts
+/tests/**/*.js
+
+# But lint actual testing code
+!tests/**/*tests.js

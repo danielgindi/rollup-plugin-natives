@@ -14,12 +14,19 @@
     "fs-extra": "^9.0.1",
     "magic-string": "^0.25.7"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "eslint": "^7.9.0",
+    "husky": "^4.3.0"
+  },
   "repository": "danielgindi/rollup-plugin-natives",
   "author": "Daniel Cohen Gindi",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/danielgindi/rollup-plugin-natives/issues"
   },
-  "homepage": "https://github.com/danielgindi/rollup-plugin-natives"
+  "homepage": "https://github.com/danielgindi/rollup-plugin-natives",
+  "scripts": {
+    "lint": "eslint -f codeframe ./",
+    "lint-fix": "eslint -f codeframe --fix ./"
+  }
 }

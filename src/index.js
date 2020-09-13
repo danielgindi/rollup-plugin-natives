@@ -2,13 +2,15 @@ const Path = require('path');
 const Fs = require('fs-extra');
 const MagicString = require('magic-string');
 
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+
 function nativePlugin(options) {
 
     let copyTo = options.copyTo || './';
     let destDir = options.destDir || './';
     let dlopen = options.dlopen || false;
     let map = options.map;
-    let isSourceMapEnabled = options.sourceMap !== false && options.sourcemap !== false
+    let isSourceMapEnabled = options.sourceMap !== false && options.sourcemap !== false;
 
     if (typeof map !== 'function') {
         map = fullPath => generateDefaultMapping(fullPath);
@@ -16,7 +18,7 @@ function nativePlugin(options) {
 
     const PREFIX = '\0natives:';
 
-    Fs.mkdirpSync(copyTo, {recursive: true});
+    Fs.mkdirpSync(copyTo, { recursive: true });
 
     let renamedMap = /**@type {Map<String, {name: String, copyTo: String}>}*/new Map();
 
@@ -76,7 +78,7 @@ function nativePlugin(options) {
             let end = start + match[0].length;
             magicString.overwrite(start, end, replacement);
 
-            result = true
+            result = true;
         }
 
         return result;
@@ -110,7 +112,7 @@ function nativePlugin(options) {
                     nativeAlias += '.node';
 
                 let moduleRoot = Path.dirname(id), prev = null;
-                while (true) {
+                while (true) { // eslint-disable-line no-constant-condition
                     if (moduleRoot === '.')
                         moduleRoot = process.cwd();
 
@@ -131,19 +133,19 @@ function nativePlugin(options) {
                     , 'arch': process.arch
                     , 'version': process.versions.node
                     , 'bindings': nativeAlias
-                    , 'module_root': moduleRoot
+                    , 'module_root': moduleRoot,
                 };
 
                 let possibilities = [
                     ['module_root', 'build', 'bindings']
                     , ['module_root', 'build', 'Debug', 'bindings']
                     , ['module_root', 'build', 'Release', 'bindings']
-                    , ['module_root', 'compiled', 'version', 'platform', 'arch', 'bindings']
+                    , ['module_root', 'compiled', 'version', 'platform', 'arch', 'bindings'],
                 ];
 
                 let possiblePaths = /**@type {String[]}*/possibilities.map(parts => {
                     parts = parts.map(part => {
-                        if (partsMap.hasOwnProperty(part))
+                        if (hasOwnProperty.call(partsMap, part))
                             return partsMap[part];
                         return part;
                     });
@@ -153,18 +155,18 @@ function nativePlugin(options) {
                 let chosenPath = possiblePaths.filter(x => Fs.pathExistsSync(x))[0] || possiblePaths[0];
 
                 return "require(" + JSON.stringify(chosenPath.replace(/\\/g, '/')) + ")";
-            })
+            });
 
 
             if (code.indexOf('node-pre-gyp') !== -1) {
-                let binary = /(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+binary\.find\(path\.resolve\(path\.join\(__dirname,\s*((['"]).*\4)\)\)\);?\s*(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\(\2\)/g;
+                let binary = /(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+binary\.find\(path\.resolve\(path\.join\(__dirname,\s*((?:['"]).*\4)\)\)\);?\s*(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\(\2\)/g;
 
                 hasBinaryReplacements = replace(code, magicString, binary, (match) => {
                     let preGyp = null;
 
                     try {
                         // noinspection NpmUsedModulesInstalled
-                        preGyp = require('node-pre-gyp')
+                        preGyp = require('node-pre-gyp');
                     } catch (ex) {
                         return null;
                     }
@@ -173,12 +175,7 @@ function nativePlugin(options) {
                     let start = match.index;
                     let end = start + match[0].length;
 
-                    let d1 = match[1];
-                    let v1 = match[2];
-                    let ref = match[3];
-                    let p = match[4];
-                    let d2 = match[5];
-                    let v2 = match[6];
+                    let [, d1, v1, ref, d2, v2] = match;
 
                     let libPath = preGyp.find(Path.resolve(Path.join(Path.dirname(id), new Function('return ' + ref)())));
 
@@ -235,7 +232,7 @@ function nativePlugin(options) {
                     if (Fs.pathExistsSync(nativePath)) {
                         Fs.copyFileSync(nativePath, mapping.copyTo);
                     } else {
-                        console.warn(`${nativePath} does not exist`)
+                        this.warn(`${nativePath} does not exist`);
                     }
                 }
 
@@ -243,7 +240,7 @@ function nativePlugin(options) {
             }
 
             return null;
-        }
+        },
     };
 }
 
