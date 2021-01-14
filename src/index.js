@@ -65,7 +65,6 @@ function nativePlugin(options) {
         };
     }
 
-
     function replace(code, magicString, pattern, fn) {
         let result = false;
         let match;
@@ -82,6 +81,45 @@ function nativePlugin(options) {
         }
 
         return result;
+    }
+
+    function mapAndReturnPrefixedId(importee, importer) {
+        let resolvedFull = Path.resolve(importer ? Path.dirname(importer) : '', importee);
+
+        let nativePath = null;
+        if (/\.(node|dll)$/i.test(importee))
+            nativePath = resolvedFull;
+        else if (Fs.pathExistsSync(resolvedFull + '.node'))
+            nativePath = resolvedFull + '.node';
+        else if (Fs.pathExistsSync(resolvedFull + '.dll'))
+            nativePath = resolvedFull + '.dll';
+
+        if (nativePath) {
+            let mapping = renamedMap.get(nativePath), isNew = false;
+
+            if (!mapping) {
+                mapping = map(nativePath);
+
+                if (typeof mapping === 'string') {
+                    mapping = generateDefaultMapping(mapping);
+                }
+
+                renamedMap.set(nativePath, mapping);
+                isNew = true;
+            }
+
+            if (isNew) {
+                if (Fs.pathExistsSync(nativePath)) {
+                    Fs.copyFileSync(nativePath, mapping.copyTo);
+                } else {
+                    this.warn(`${nativePath} does not exist`);
+                }
+            }
+
+            return PREFIX + mapping.name;
+        }
+
+        return null;
     }
 
     return {
@@ -167,7 +205,12 @@ function nativePlugin(options) {
 
                 let chosenPath = possiblePaths.find(x => Fs.pathExistsSync(x)) || possiblePaths[0];
 
-                return "require(" + JSON.stringify(chosenPath.replace(/\\/g, '/')) + ")";
+                let prefixedId = mapAndReturnPrefixedId(chosenPath);
+                if (prefixedId) {
+                    return "require(" + JSON.stringify(prefixedId) + ")";
+                }
+
+                return match[0];
             });
 
             hasBindingReplacements = replace(code, magicString, simpleRequireRgx, (match) => {
@@ -179,7 +222,10 @@ function nativePlugin(options) {
                 path = Path.join(getModuleRoot(), path);
 
                 if (Fs.pathExistsSync(path)) {
-                    return "require(" + JSON.stringify(path.replace(/\\/g, '/')) + ")";
+                    let prefixedId = mapAndReturnPrefixedId(path);
+                    if (prefixedId) {
+                        return "require(" + JSON.stringify(prefixedId) + ")";
+                    }
                 }
 
                 return match[0];
@@ -198,7 +244,6 @@ function nativePlugin(options) {
                         return null;
                     }
 
-
                     let start = match.index;
                     let end = start + match[0].length;
 
@@ -206,7 +251,12 @@ function nativePlugin(options) {
 
                     let libPath = preGyp.find(Path.resolve(Path.join(Path.dirname(id), new Function('return ' + ref)())));
 
-                    return `${d1} ${v1}=${JSON.stringify(libPath.replace(/\\/g, '/'))};${d2} ${v2}=require(${JSON.stringify(libPath.replace(/\\/g, '/'))})`;
+                    let prefixedId = mapAndReturnPrefixedId(libPath);
+                    if (prefixedId) {
+                        return `${d1} ${v1}=${JSON.stringify(renamedMap.get(libPath).name.replace(/\\/g, '/'))};${d2} ${v2}=require(${JSON.stringify(prefixedId)})`;
+                    }
+
+                    return match[0];
                 });
             }
 
@@ -235,40 +285,7 @@ function nativePlugin(options) {
 
             let resolvedFull = Path.resolve(importer ? Path.dirname(importer) : '', importee);
 
-            let nativePath = null;
-            if (/\.(node|dll)$/i.test(importee))
-                nativePath = resolvedFull;
-            else if (Fs.pathExistsSync(resolvedFull + '.node'))
-                nativePath = resolvedFull + '.node';
-            else if (Fs.pathExistsSync(resolvedFull + '.dll'))
-                nativePath = resolvedFull + '.dll';
-
-            if (nativePath) {
-                let mapping = renamedMap.get(nativePath), isNew = false;
-
-                if (!mapping) {
-                    mapping = map(nativePath);
-
-                    if (typeof mapping === 'string') {
-                        mapping = generateDefaultMapping(mapping);
-                    }
-
-                    renamedMap.set(nativePath, mapping);
-                    isNew = true;
-                }
-
-                if (isNew) {
-                    if (Fs.pathExistsSync(nativePath)) {
-                        Fs.copyFileSync(nativePath, mapping.copyTo);
-                    } else {
-                        this.warn(`${nativePath} does not exist`);
-                    }
-                }
-
-                return PREFIX + mapping.name;
-            }
-
-            return null;
+            return mapAndReturnPrefixedId(importee, importer);
         },
     };
 }
