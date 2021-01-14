@@ -15,8 +15,8 @@
     "magic-string": "^0.25.7"
   },
   "devDependencies": {
-    "eslint": "^7.9.0",
-    "husky": "^4.3.0"
+    "eslint": "^7.17.0",
+    "husky": "^4.3.7"
   },
   "repository": "danielgindi/rollup-plugin-natives",
   "author": "Daniel Cohen Gindi",

@@ -100,9 +100,38 @@ function nativePlugin(options) {
         transform(code, id) {
             let magicString = new MagicString(code);
             let bindingsRgx = /require\(['"]bindings['"]\)\(((['"]).+?\2)?\)/g;
+            let simpleRequireRgx = /require\(['"](.*?)['"]\)/g;
 
             let hasBindingReplacements = false;
             let hasBinaryReplacements = false;
+
+            const getModuleRoot = (() => {
+                let moduleRoot = null;
+
+                return () => {
+                    if (moduleRoot === null) {
+                        moduleRoot = Path.dirname(id);
+                        let prev = null;
+                        while (true) { // eslint-disable-line no-constant-condition
+                            if (moduleRoot === '.')
+                                moduleRoot = process.cwd();
+
+                            if (Fs.pathExistsSync(Path.join(moduleRoot, 'package.json')) ||
+                                Fs.pathExistsSync(Path.join(moduleRoot, 'node_modules')))
+                                break;
+
+                            if (prev === moduleRoot)
+                                break;
+
+                            // Try the parent dir next
+                            prev = moduleRoot;
+                            moduleRoot = Path.resolve(moduleRoot, '..');
+                        }
+                    }
+
+                    return moduleRoot;
+                };
+            })();
 
             hasBindingReplacements = replace(code, magicString, bindingsRgx, (match) => {
                 let name = match[1];
@@ -111,29 +140,13 @@ function nativePlugin(options) {
                 if (!nativeAlias.endsWith('.node'))
                     nativeAlias += '.node';
 
-                let moduleRoot = Path.dirname(id), prev = null;
-                while (true) { // eslint-disable-line no-constant-condition
-                    if (moduleRoot === '.')
-                        moduleRoot = process.cwd();
-
-                    if (Fs.pathExistsSync(Path.join(moduleRoot, 'package.json')) || Fs.pathExistsSync(Path.join(moduleRoot, 'node_modules')))
-                        break;
-
-                    if (prev === moduleRoot)
-                        break;
-
-                    // Try the parent dir next
-                    prev = moduleRoot;
-                    moduleRoot = Path.resolve(moduleRoot, '..');
-                }
-
                 let partsMap = {
                     'compiled': process.env.NODE_BINDINGS_COMPILED_DIR || 'compiled',
                     'platform': process.platform,
                     'arch': process.arch,
                     'version': process.versions.node,
                     'bindings': nativeAlias,
-                    'module_root': moduleRoot,
+                    'module_root': getModuleRoot(),
                 };
 
                 let possibilities = [
@@ -152,11 +165,25 @@ function nativePlugin(options) {
                     return Path.join.apply(Path, parts);
                 });
 
-                let chosenPath = possiblePaths.filter(x => Fs.pathExistsSync(x))[0] || possiblePaths[0];
+                let chosenPath = possiblePaths.find(x => Fs.pathExistsSync(x)) || possiblePaths[0];
 
                 return "require(" + JSON.stringify(chosenPath.replace(/\\/g, '/')) + ")";
             });
 
+            hasBindingReplacements = replace(code, magicString, simpleRequireRgx, (match) => {
+                let path = match[1];
+
+                if (!path.endsWith('.node'))
+                    path += '.node';
+
+                path = Path.join(getModuleRoot(), path);
+
+                if (Fs.pathExistsSync(path)) {
+                    return "require(" + JSON.stringify(path.replace(/\\/g, '/')) + ")";
+                }
+
+                return match[0];
+            });
 
             if (code.indexOf('node-pre-gyp') !== -1) {
                 let binary = /(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+binary\.find\(path\.resolve\(path\.join\(__dirname,\s*((?:['"]).*\4)\)\)\);?\s*(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\(\2\)/g;
@@ -188,7 +215,7 @@ function nativePlugin(options) {
 
             let result = { code: magicString.toString() };
             if (isSourceMapEnabled) {
-              result.map = magicString.generateMap({ hires: true });
+                result.map = magicString.generateMap({ hires: true });
             }
 
             return result;
@@ -203,6 +230,8 @@ function nativePlugin(options) {
                 importer = importer.slice(importer.indexOf(':') + 1);
             if (importee && importee[0] === '\0' && importee.indexOf(':') !== -1)
                 importee = importee.slice(importee.indexOf(':') + 1);
+            if (importee.endsWith('?commonjs-require'))
+                importee = importee.slice(1, -'?commonjs-require'.length);
 
             let resolvedFull = Path.resolve(importer ? Path.dirname(importer) : '', importee);
 
