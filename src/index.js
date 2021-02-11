@@ -205,7 +205,7 @@ function nativePlugin(options) {
 
                 let chosenPath = possiblePaths.find(x => Fs.pathExistsSync(x)) || possiblePaths[0];
 
-                let prefixedId = mapAndReturnPrefixedId(chosenPath);
+                let prefixedId = mapAndReturnPrefixedId.apply(this, [chosenPath]);
                 if (prefixedId) {
                     return "require(" + JSON.stringify(prefixedId) + ")";
                 }
@@ -222,7 +222,7 @@ function nativePlugin(options) {
                 path = Path.join(getModuleRoot(), path);
 
                 if (Fs.pathExistsSync(path)) {
-                    let prefixedId = mapAndReturnPrefixedId(path);
+                    let prefixedId = mapAndReturnPrefixedId.apply(this, [path]);
                     if (prefixedId) {
                         return "require(" + JSON.stringify(prefixedId) + ")";
                     }
@@ -251,7 +251,7 @@ function nativePlugin(options) {
 
                     let libPath = preGyp.find(Path.resolve(Path.join(Path.dirname(id), new Function('return ' + ref)())), options);
 
-                    let prefixedId = mapAndReturnPrefixedId(libPath);
+                    let prefixedId = mapAndReturnPrefixedId.apply(this, [libPath]);
                     if (prefixedId) {
                         return `${d1} ${v1}=${JSON.stringify(renamedMap.get(libPath).name.replace(/\\/g, '/'))};${d2} ${v2}=require(${JSON.stringify(prefixedId)})`;
                     }
@@ -285,7 +285,7 @@ function nativePlugin(options) {
 
             let resolvedFull = Path.resolve(importer ? Path.dirname(importer) : '', importee);
 
-            return mapAndReturnPrefixedId(importee, importer);
+            return mapAndReturnPrefixedId.apply(this, [importee, importer]);
         },
     };
 }
