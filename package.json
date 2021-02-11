@@ -11,12 +11,13 @@
     "rollup": ">=0.56.0"
   },
   "dependencies": {
-    "fs-extra": "^9.0.1",
+    "fs-extra": "^9.1.0",
     "magic-string": "^0.25.7"
   },
   "devDependencies": {
-    "eslint": "^7.17.0",
-    "husky": "^4.3.7"
+    "eslint": "^7.19.0",
+    "husky": "^4.3.8",
+    "pinst": "^2.1.4"
   },
   "repository": "danielgindi/rollup-plugin-natives",
   "author": "Daniel Cohen Gindi",
@@ -27,6 +28,9 @@
   "homepage": "https://github.com/danielgindi/rollup-plugin-natives",
   "scripts": {
     "lint": "eslint -f codeframe ./",
-    "lint-fix": "eslint -f codeframe --fix ./"
+    "lint-fix": "eslint -f codeframe --fix ./",
+    "postinstall": "husky install",
+    "prepublishOnly": "pinst --disable",
+    "postpublish": "pinst --enable"
   }
 }
