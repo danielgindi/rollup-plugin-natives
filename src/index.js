@@ -239,9 +239,14 @@ function nativePlugin(options) {
 
                     try {
                         // noinspection NpmUsedModulesInstalled
-                        preGyp = require('node-pre-gyp');
+                        preGyp = require('@mapbox/node-pre-gyp');
                     } catch (ex) {
+                      try {
+                        // noinspection NpmUsedModulesInstalled
+                        preGyp = require('node-pre-gyp');
+                      } catch (ex) {
                         return null;
+                      }
                     }
 
                     let start = match.index;
