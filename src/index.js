@@ -180,8 +180,8 @@ function nativePlugin(options) {
 
                 let partsMap = {
                     'compiled': process.env.NODE_BINDINGS_COMPILED_DIR || 'compiled',
-                    'platform': process.platform,
-                    'arch': process.arch,
+                    'platform': options.target_platform || process.platform,
+                    'arch': options.target_arch || process.arch,
                     'version': process.versions.node,
                     'bindings': nativeAlias,
                     'module_root': getModuleRoot(),
@@ -249,7 +249,7 @@ function nativePlugin(options) {
 
                     let [, d1, v1, ref, d2, v2] = match;
 
-                    let libPath = preGyp.find(Path.resolve(Path.join(Path.dirname(id), new Function('return ' + ref)())));
+                    let libPath = preGyp.find(Path.resolve(Path.join(Path.dirname(id), new Function('return ' + ref)())), options);
 
                     let prefixedId = mapAndReturnPrefixedId(libPath);
                     if (prefixedId) {
