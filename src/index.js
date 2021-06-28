@@ -18,8 +18,6 @@ function nativePlugin(options) {
 
     const PREFIX = '\0natives:';
 
-    Fs.mkdirpSync(copyTo, { recursive: true });
-
     let renamedMap = /**@type {Map<String, {name: String, copyTo: String}>}*/new Map();
 
     function exportModule(path) {
@@ -124,6 +122,10 @@ function nativePlugin(options) {
 
     return {
         name: 'rollup-plugin-natives',
+        
+        buildStart(options) {
+            Fs.mkdirpSync(copyTo, { recursive: true });
+        },
 
         load(id) {
             if (id.startsWith(PREFIX))
