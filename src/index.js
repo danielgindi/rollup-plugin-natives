@@ -123,7 +123,7 @@ function nativePlugin(options) {
     return {
         name: 'rollup-plugin-natives',
         
-        buildStart(options) {
+        buildStart(_options) {
             Fs.mkdirpSync(copyTo, { recursive: true });
         },
 
