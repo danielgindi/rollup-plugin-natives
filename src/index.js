@@ -234,21 +234,31 @@ function nativePlugin(options) {
             });
 
             if (code.indexOf('node-pre-gyp') !== -1) {
-                let binary = /(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+binary\.find\(path\.resolve\(path\.join\(__dirname,\s*((?:['"]).*\4)\)\)\);?\s*(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\(\2\)/g;
+                let varRgx = /(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\((['"])(@mapbox\/node-pre-gyp|node-pre-gyp)\3\);/;
+                let binaryRgx = /\b(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+binary\.find\(path\.resolve\(path\.join\(__dirname,\s*((?:['"]).*\4)\)\)\);?\s*(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\(\2\)/g;
 
-                hasBinaryReplacements = replace(code, magicString, binary, (match) => {
+                let varMatch = code.match(varRgx);
+
+                if (varMatch) {
+                    binaryRgx = new RegExp(`\\b(var|let|const)\\s+([a-zA-Z0-9_]+)\\s+=\\s+${varMatch[2]}\\.find\\(path\\.resolve\\(path\\.join\\(__dirname,\\s*((?:['"]).*\\4)\\)\\)\\);?\\s*(var|let|const)\\s+([a-zA-Z0-9_]+)\\s+=\\s+require\\(\\2\\)`, 'g');
+                }
+
+                hasBinaryReplacements = replace(code, magicString, binaryRgx, (match) => {
                     let preGyp = null;
+
+                    let r1 = varMatch && varMatch[4][0] === '@' ? '@mapbox/node-pre-gyp' : 'node-pre-gyp';
+                    let r2 = varMatch && varMatch[4][0] === '@' ? 'node-pre-gyp' : '@mapbox/node-pre-gyp';
 
                     try {
                         // noinspection NpmUsedModulesInstalled
-                        preGyp = require('@mapbox/node-pre-gyp');
+                        preGyp = require(r1);
                     } catch (ex) {
-                      try {
-                        // noinspection NpmUsedModulesInstalled
-                        preGyp = require('node-pre-gyp');
-                      } catch (ex) {
-                        return null;
-                      }
+                        try {
+                            // noinspection NpmUsedModulesInstalled
+                            preGyp = require(r2);
+                        } catch (ex) {
+                            return null;
+                        }
                     }
 
                     let [, d1, v1, ref, d2, v2] = match;
