@@ -212,7 +212,7 @@ function nativePlugin(options) {
                     return "require(" + JSON.stringify(prefixedId) + ")";
                 }
 
-                return match[0];
+                return null;
             });
 
             hasBindingReplacements = replace(code, magicString, simpleRequireRgx, (match) => {
@@ -230,7 +230,7 @@ function nativePlugin(options) {
                     }
                 }
 
-                return match[0];
+                return null;
             });
 
             if (code.indexOf('node-pre-gyp') !== -1) {
@@ -251,9 +251,6 @@ function nativePlugin(options) {
                       }
                     }
 
-                    let start = match.index;
-                    let end = start + match[0].length;
-
                     let [, d1, v1, ref, d2, v2] = match;
 
                     let libPath = preGyp.find(Path.resolve(Path.join(Path.dirname(id), new Function('return ' + ref)())), options);
@@ -263,7 +260,7 @@ function nativePlugin(options) {
                         return `${d1} ${v1}=${JSON.stringify(renamedMap.get(libPath).name.replace(/\\/g, '/'))};${d2} ${v2}=require(${JSON.stringify(prefixedId)})`;
                     }
 
-                    return match[0];
+                    return null;
                 });
             }
 
