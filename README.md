@@ -54,6 +54,15 @@ export default {
 };
 ```
 
+### Using with node-pre-gyp
+
+`node-pre-gyp` way of determining the require path is supported only if the module code matches (almost) exactly the recommended method, ie if it looks like this:
+```js
+const binary = require('@mapbox/node-pre-gyp');
+const binding_path = binary.find(path.resolve(path.join(__dirname, '../package.json')));
+const module = require(binding_path);
+```
+
 ## License
 
 MIT

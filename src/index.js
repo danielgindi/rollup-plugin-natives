@@ -67,6 +67,7 @@ function nativePlugin(options) {
         let result = false;
         let match;
 
+		pattern.lastIndex = 0;
         while ((match = pattern.exec(code))) {
             let replacement = fn(match);
             if (replacement === null) continue;
@@ -234,10 +235,10 @@ function nativePlugin(options) {
             });
 
             if (code.indexOf('node-pre-gyp') !== -1) {
-                let varRgx = /(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\((['"])(@mapbox\/node-pre-gyp|node-pre-gyp)\3\);/;
+                let varRgx = /(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\((['"])(@mapbox\/node-pre-gyp|node-pre-gyp)\3\);?/g;
                 let binaryRgx = /\b(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+binary\.find\(path\.resolve\(path\.join\(__dirname,\s*((?:['"]).*\4)\)\)\);?\s*(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\(\2\)/g;
 
-                let varMatch = code.match(varRgx);
+                let varMatch = varRgx.exec(code);
 
                 if (varMatch) {
                     binaryRgx = new RegExp(`\\b(var|let|const)\\s+([a-zA-Z0-9_]+)\\s+=\\s+${varMatch[2]}\\.find\\(path\\.resolve\\(path\\.join\\(__dirname,\\s*((?:['"]).*\\4)\\)\\)\\);?\\s*(var|let|const)\\s+([a-zA-Z0-9_]+)\\s+=\\s+require\\(\\2\\)`, 'g');
@@ -246,20 +247,25 @@ function nativePlugin(options) {
                 hasBinaryReplacements = replace(code, magicString, binaryRgx, (match) => {
                     let preGyp = null;
 
-                    let r1 = varMatch && varMatch[4][0] === '@' ? '@mapbox/node-pre-gyp' : 'node-pre-gyp';
-                    let r2 = varMatch && varMatch[4][0] === '@' ? 'node-pre-gyp' : '@mapbox/node-pre-gyp';
+					let r1 = varMatch && varMatch[4][0] === '@' ? '@mapbox/node-pre-gyp' : 'node-pre-gyp';
+					let r2 = varMatch && varMatch[4][0] === '@' ? 'node-pre-gyp' : '@mapbox/node-pre-gyp';
 
-                    try {
-                        // noinspection NpmUsedModulesInstalled
-                        preGyp = require(r1);
-                    } catch (ex) {
-                        try {
-                            // noinspection NpmUsedModulesInstalled
-                            preGyp = require(r2);
-                        } catch (ex) {
-                            return null;
-                        }
-                    }
+					let preGypPath = Path.dirname(id);
+					while (preGypPath !== '/' && preGyp === null) {
+						try {
+							// noinspection NpmUsedModulesInstalled
+							preGyp = require(Path.resolve(Path.join(preGypPath, 'node_modules', r1)));
+						} catch (ex) {
+							try {
+								// noinspection NpmUsedModulesInstalled
+								preGyp = require(Path.resolve(Path.join(preGypPath, 'node_modules', r2)));
+							} catch (ex) {
+							}
+						}
+						preGypPath = Path.dirname(preGypPath);
+					}
+
+					if (!preGyp) return null;
 
                     let [, d1, v1, ref, d2, v2] = match;
 
@@ -272,6 +278,9 @@ function nativePlugin(options) {
 
                     return null;
                 });
+
+				if (hasBinaryReplacements)
+					replace(code, magicString, varRgx, () => '')
             }
 
             if (!hasBindingReplacements && !hasBinaryReplacements)
