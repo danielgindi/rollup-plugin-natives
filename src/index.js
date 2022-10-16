@@ -250,8 +250,12 @@ function nativePlugin(options) {
                     let r1 = varMatch && varMatch[4][0] === '@' ? '@mapbox/node-pre-gyp' : 'node-pre-gyp';
                     let r2 = varMatch && varMatch[4][0] === '@' ? 'node-pre-gyp' : '@mapbox/node-pre-gyp';
 
+                    // We can't simply require('node-pre-gyp') because we are not in the same context as the target module
+                    // Maybe node-pre-gyp is installed in node_modules/target_module/node_modules
                     let preGypPath = Path.dirname(id);
                     while (preGypPath !== '/' && preGyp === null) {
+                        // Start we the target module context and then go back in the directory tree
+                        // until the right context has been found
                         try {
                             // noinspection NpmUsedModulesInstalled
                             preGyp = require(Path.resolve(Path.join(preGypPath, 'node_modules', r1)));
@@ -280,6 +284,10 @@ function nativePlugin(options) {
                     return null;
                 });
 
+                // If the native module is been required through a hard-coded path, then node-pre-gyp
+                // is not required anymore - remove the require('node-pre-gyp') statement because it
+                // pulls some additional dependencies - like AWS S3 - which are needed only for downloading
+                // new binaries
                 if (hasBinaryReplacements)
                     replace(code, magicString, varRgx, () => '');
             }
