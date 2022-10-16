@@ -254,7 +254,7 @@ function nativePlugin(options) {
                     // Maybe node-pre-gyp is installed in node_modules/target_module/node_modules
                     let preGypPath = Path.dirname(id);
                     while (preGypPath !== '/' && preGyp === null) {
-                        // Start we the target module context and then go back in the directory tree
+                        // Start with the target module context and then go back in the directory tree
                         // until the right context has been found
                         try {
                             // noinspection NpmUsedModulesInstalled
