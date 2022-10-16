@@ -67,7 +67,7 @@ function nativePlugin(options) {
         let result = false;
         let match;
 
-		pattern.lastIndex = 0;
+        pattern.lastIndex = 0;
         while ((match = pattern.exec(code))) {
             let replacement = fn(match);
             if (replacement === null) continue;
@@ -247,25 +247,26 @@ function nativePlugin(options) {
                 hasBinaryReplacements = replace(code, magicString, binaryRgx, (match) => {
                     let preGyp = null;
 
-					let r1 = varMatch && varMatch[4][0] === '@' ? '@mapbox/node-pre-gyp' : 'node-pre-gyp';
-					let r2 = varMatch && varMatch[4][0] === '@' ? 'node-pre-gyp' : '@mapbox/node-pre-gyp';
+                    let r1 = varMatch && varMatch[4][0] === '@' ? '@mapbox/node-pre-gyp' : 'node-pre-gyp';
+                    let r2 = varMatch && varMatch[4][0] === '@' ? 'node-pre-gyp' : '@mapbox/node-pre-gyp';
 
-					let preGypPath = Path.dirname(id);
-					while (preGypPath !== '/' && preGyp === null) {
-						try {
-							// noinspection NpmUsedModulesInstalled
-							preGyp = require(Path.resolve(Path.join(preGypPath, 'node_modules', r1)));
-						} catch (ex) {
-							try {
-								// noinspection NpmUsedModulesInstalled
-								preGyp = require(Path.resolve(Path.join(preGypPath, 'node_modules', r2)));
-							} catch (ex) {
-							}
-						}
-						preGypPath = Path.dirname(preGypPath);
-					}
+                    let preGypPath = Path.dirname(id);
+                    while (preGypPath !== '/' && preGyp === null) {
+                        try {
+                            // noinspection NpmUsedModulesInstalled
+                            preGyp = require(Path.resolve(Path.join(preGypPath, 'node_modules', r1)));
+                        } catch (ex) {
+                            try {
+                                // noinspection NpmUsedModulesInstalled
+                                preGyp = require(Path.resolve(Path.join(preGypPath, 'node_modules', r2)));
+                            } catch (ex) {
+                                // ignore
+                            }
+                        }
+                        preGypPath = Path.dirname(preGypPath);
+                    }
 
-					if (!preGyp) return null;
+                    if (!preGyp) return null;
 
                     let [, d1, v1, ref, d2, v2] = match;
 
@@ -279,8 +280,8 @@ function nativePlugin(options) {
                     return null;
                 });
 
-				if (hasBinaryReplacements)
-					replace(code, magicString, varRgx, () => '')
+                if (hasBinaryReplacements)
+                    replace(code, magicString, varRgx, () => '');
             }
 
             if (!hasBindingReplacements && !hasBinaryReplacements)
