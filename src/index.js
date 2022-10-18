@@ -67,6 +67,7 @@ function nativePlugin(options) {
         let result = false;
         let match;
 
+        pattern.lastIndex = 0;
         while ((match = pattern.exec(code))) {
             let replacement = fn(match);
             if (replacement === null) continue;
@@ -234,10 +235,10 @@ function nativePlugin(options) {
             });
 
             if (code.indexOf('node-pre-gyp') !== -1) {
-                let varRgx = /(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\((['"])(@mapbox\/node-pre-gyp|node-pre-gyp)\3\);/;
+                let varRgx = /(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\((['"])(@mapbox\/node-pre-gyp|node-pre-gyp)\3\);?/g;
                 let binaryRgx = /\b(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+binary\.find\(path\.resolve\(path\.join\(__dirname,\s*((?:['"]).*\4)\)\)\);?\s*(var|let|const)\s+([a-zA-Z0-9_]+)\s+=\s+require\(\2\)/g;
 
-                let varMatch = code.match(varRgx);
+                let varMatch = varRgx.exec(code);
 
                 if (varMatch) {
                     binaryRgx = new RegExp(`\\b(var|let|const)\\s+([a-zA-Z0-9_]+)\\s+=\\s+${varMatch[2]}\\.find\\(path\\.resolve\\(path\\.join\\(__dirname,\\s*((?:['"]).*\\4)\\)\\)\\);?\\s*(var|let|const)\\s+([a-zA-Z0-9_]+)\\s+=\\s+require\\(\\2\\)`, 'g');
@@ -249,17 +250,27 @@ function nativePlugin(options) {
                     let r1 = varMatch && varMatch[4][0] === '@' ? '@mapbox/node-pre-gyp' : 'node-pre-gyp';
                     let r2 = varMatch && varMatch[4][0] === '@' ? 'node-pre-gyp' : '@mapbox/node-pre-gyp';
 
-                    try {
-                        // noinspection NpmUsedModulesInstalled
-                        preGyp = require(r1);
-                    } catch (ex) {
+                    // We can't simply require('node-pre-gyp') because we are not in the same context as the target module
+                    // Maybe node-pre-gyp is installed in node_modules/target_module/node_modules
+                    let preGypPath = Path.dirname(id);
+                    while (preGypPath !== '/' && preGyp === null) {
+                        // Start with the target module context and then go back in the directory tree
+                        // until the right context has been found
                         try {
                             // noinspection NpmUsedModulesInstalled
-                            preGyp = require(r2);
+                            preGyp = require(Path.resolve(Path.join(preGypPath, 'node_modules', r1)));
                         } catch (ex) {
-                            return null;
+                            try {
+                                // noinspection NpmUsedModulesInstalled
+                                preGyp = require(Path.resolve(Path.join(preGypPath, 'node_modules', r2)));
+                            } catch (ex) {
+                                // ignore
+                            }
                         }
+                        preGypPath = Path.dirname(preGypPath);
                     }
+
+                    if (!preGyp) return null;
 
                     let [, d1, v1, ref, d2, v2] = match;
 
@@ -272,6 +283,13 @@ function nativePlugin(options) {
 
                     return null;
                 });
+
+                // If the native module is been required through a hard-coded path, then node-pre-gyp
+                // is not required anymore - remove the require('node-pre-gyp') statement because it
+                // pulls some additional dependencies - like AWS S3 - which are needed only for downloading
+                // new binaries
+                if (hasBinaryReplacements)
+                    replace(code, magicString, varRgx, () => '');
             }
 
             if (!hasBindingReplacements && !hasBinaryReplacements)
