@@ -1,6 +1,6 @@
 {
   "name": "rollup-plugin-natives",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "description": "Extract native modules (.node files) while creating a rollup bundle and put them in one place",
   "main": "src/index.js",
   "files": [
