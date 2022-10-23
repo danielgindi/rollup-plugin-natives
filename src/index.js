@@ -11,18 +11,19 @@ const hasOwnProperty = Object.prototype.hasOwnProperty;
  * @property {boolean?} [dlopen=false] Use `dlopen` instead of `require`/`import`. This must be set to true if using a different file extension that '.node'
  * @property {function(modulePath:string):(string|{name:string, copyTo:string})?} [map] Modify the final filename for specific modules. A function that receives a full path to the original file,
  *  and returns a desired filename or desired file name and a specific destination to copy to.
+ * @property {boolean?} [targetEsm=false] If the target is ESM, so we can't use `require` (and .node is not supported in `import` anyway), we will need to use `createRequire` instead.
  * @property {boolean?} [sourcemap=true] Generate sourcemap
  */
 /** */
 
 
 function nativePlugin(/**RollupPluginNativesOptions*/options) {
-
-    let copyTo = options.copyTo || './';
-    let destDir = options.destDir || './';
-    let dlopen = options.dlopen || false;
+    const copyTo = options.copyTo || './';
+    const destDir = options.destDir || './';
+    const dlopen = options.dlopen || false;
     let map = options.map;
-    let isSourceMapEnabled = options['sourceMap'] !== false && options.sourcemap !== false;
+    const isSourceMapEnabled = options['sourceMap'] !== false && options.sourcemap !== false;
+    const targetEsm = options.targetEsm || false;
 
     if (typeof map !== 'function') {
         map = fullPath => generateDefaultMapping(fullPath);
@@ -47,6 +48,13 @@ function nativePlugin(/**RollupPluginNativesOptions*/options) {
               return req(p);
             };
             export default get();\n`;
+
+        if (targetEsm)
+            return `
+            import {createRequire} from 'module';
+            const require = createRequire(import.meta.url);
+            export default require(${JSON.stringify(path)});
+            \n`;
 
         return `export default require(${JSON.stringify(path)});\n`;
     }
@@ -296,7 +304,7 @@ function nativePlugin(/**RollupPluginNativesOptions*/options) {
                     return null;
                 });
 
-                // If the native module is been required through a hard-coded path, then node-pre-gyp
+                // If the native module has been required through a hard-coded path, then node-pre-gyp
                 // is not required anymore - remove the require('node-pre-gyp') statement because it
                 // pulls some additional dependencies - like AWS S3 - which are needed only for downloading
                 // new binaries
@@ -326,8 +334,6 @@ function nativePlugin(/**RollupPluginNativesOptions*/options) {
                 importee = importee.slice(importee.indexOf(':') + 1);
             if (importee.endsWith('?commonjs-require'))
                 importee = importee.slice(1, -'?commonjs-require'.length);
-
-            let resolvedFull = Path.resolve(importer ? Path.dirname(importer) : '', importee);
 
             return mapAndReturnPrefixedId.apply(this, [importee, importer]);
         },

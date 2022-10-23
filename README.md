@@ -48,7 +48,10 @@ export default {
             map: (modulePath) => { name: 'filename.node', copyTo: 'C:\\Dist\\libs\\filename.node' },
 
             // Generate sourcemap
-            sourcemap: true
+            sourcemap: true,
+            
+            // If the target is ESM, so we can't use `require` (and .node is not supported in `import` anyway), we will need to use `createRequire` instead.
+            targetEsm: false,
         })
     ]
 };
