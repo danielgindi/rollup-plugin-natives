@@ -4,13 +4,25 @@ const MagicString = require('magic-string');
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 
-function nativePlugin(options) {
+/**
+ * @interface RollupPluginNativesOptions
+ * @property {string?} [copyTo='./'] Where we want to physically put the extracted .node files
+ * @property {string?} [destDir='./'] Path to the same folder, relative to the output bundle js
+ * @property {boolean?} [dlopen=false] Use `dlopen` instead of `require`/`import`. This must be set to true if using a different file extension that '.node'
+ * @property {function(modulePath:string):(string|{name:string, copyTo:string})?} [map] Modify the final filename for specific modules. A function that receives a full path to the original file,
+ *  and returns a desired filename or desired file name and a specific destination to copy to.
+ * @property {boolean?} [sourcemap=true] Generate sourcemap
+ */
+/** */
+
+
+function nativePlugin(/**RollupPluginNativesOptions*/options) {
 
     let copyTo = options.copyTo || './';
     let destDir = options.destDir || './';
     let dlopen = options.dlopen || false;
     let map = options.map;
-    let isSourceMapEnabled = options.sourceMap !== false && options.sourcemap !== false;
+    let isSourceMapEnabled = options['sourceMap'] !== false && options.sourcemap !== false;
 
     if (typeof map !== 'function') {
         map = fullPath => generateDefaultMapping(fullPath);
@@ -123,7 +135,7 @@ function nativePlugin(options) {
 
     return {
         name: 'rollup-plugin-natives',
-        
+
         buildStart(_options) {
             Fs.mkdirpSync(copyTo, { recursive: true });
         },
