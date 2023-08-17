@@ -44,9 +44,13 @@ export default {
             // A function that receives a full path to the original file, and returns a desired filename
             map: (modulePath) => 'filename.node',
 
-            // Or a function that returns a desired file name and a specific destination to copy to
+            // OR you can have a function that returns a desired file name and a specific destination to copy to.
             map: (modulePath) => { name: 'filename.node', copyTo: 'C:\\Dist\\libs\\filename.node' },
 
+            // A transformer function that allows replacing a given node module path with another.
+            // This is good for either handling missing files, or dynamically resolving desired architectures etc.
+            originTransform: (path: string, exists: boolean) => (path: string|undefined),
+            
             // Generate sourcemap
             sourcemap: true,
             

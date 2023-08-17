@@ -9,7 +9,8 @@ const hasOwnProperty = Object.prototype.hasOwnProperty;
  * @property {string?} [copyTo='./'] Where we want to physically put the extracted .node files
  * @property {string?} [destDir='./'] Path to the same folder, relative to the output bundle js
  * @property {boolean?} [dlopen=false] Use `dlopen` instead of `require`/`import`. This must be set to true if using a different file extension that '.node'
- * @property {function(modulePath:string):(string|{name:string, copyTo:string})?} [map] Modify the final filename for specific modules. A function that receives a full path to the original file,
+ * @property {function(modulePath:string):(string|{name:string, copyTo:string})?} [map] Modify the final filename for specific modules. A function that receives a full path to the original file.
+ * @property {function(path: string, exists: boolean):(string|undefined)?} [originTransform] A transformer function that allows replacing a given node module path with another.
  *  and returns a desired filename or desired file name and a specific destination to copy to.
  * @property {boolean?} [targetEsm=false] If the target is ESM, so we can't use `require` (and .node is not supported in `import` anyway), we will need to use `createRequire` instead.
  * @property {boolean?} [sourcemap=true] Generate sourcemap
@@ -21,6 +22,7 @@ function nativePlugin(/**RollupPluginNativesOptions*/options) {
     const copyTo = options.copyTo || './';
     const destDir = options.destDir || './';
     const dlopen = options.dlopen || false;
+    const originTransform = options.originTransform;
     let map = options.map;
     const isSourceMapEnabled = options['sourceMap'] !== false && options.sourcemap !== false;
     const targetEsm = options.targetEsm || false;
@@ -128,7 +130,16 @@ function nativePlugin(/**RollupPluginNativesOptions*/options) {
             }
 
             if (isNew) {
-                if (Fs.pathExistsSync(nativePath)) {
+                let exists = Fs.pathExistsSync(nativePath);
+                if (typeof originTransform === 'function') {
+                    const transformed = originTransform(nativePath, exists);
+                    if (transformed !== undefined) {
+                        nativePath = transformed;
+                        exists = Fs.pathExistsSync(nativePath);
+                    }
+                }
+
+                if (exists) {
                     Fs.copyFileSync(nativePath, mapping.copyTo);
                 } else {
                     this.warn(`${nativePath} does not exist`);
