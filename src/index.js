@@ -247,7 +247,7 @@ function nativePlugin(/**RollupPluginNativesOptions*/options) {
                 return null;
             });
 
-            hasBindingReplacements = replace(code, magicString, simpleRequireRgx, (match) => {
+            hasBindingReplacements = hasBindingReplacements || replace(code, magicString, simpleRequireRgx, (match) => {
                 let path = match[1];
 
                 if (!path.endsWith('.node'))
