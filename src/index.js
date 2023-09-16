@@ -18,7 +18,7 @@ const hasOwnProperty = Object.prototype.hasOwnProperty;
 /** */
 
 
-function nativePlugin(/**RollupPluginNativesOptions*/options) {
+function nativePlugin(/**RollupPluginNativesOptions*/options = {}) {
     const copyTo = options.copyTo || './';
     const destDir = options.destDir || './';
     const dlopen = options.dlopen || false;
